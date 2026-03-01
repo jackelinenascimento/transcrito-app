@@ -1,7 +1,10 @@
+import warnings
 import whisper
+
 from src.domain.transcription_service import TranscriptionService
 from src.domain.transcription import Transcription, TranscriptionSegment
 
+warnings.filterwarnings("ignore")
 
 class WhisperTranscriptionService(TranscriptionService):
 
