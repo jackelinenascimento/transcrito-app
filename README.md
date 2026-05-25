@@ -86,6 +86,14 @@ Instalar dependências:
 pip install -r requirements.txt
 ```
 
+Se voce pretende usar diarizacao avançada (pyannote, whisperx) ou pipelines de audio
+mais sofisticadas, instale as dependencias opcionais:
+
+```
+# Instala as dependencias opcionais para diarizacao (pesadas)
+pip install -r requirements-diarization.txt
+```
+
 ## Uso
 
 Coloque um vídeo na pasta `videos` ou passe o caminho diretamente.

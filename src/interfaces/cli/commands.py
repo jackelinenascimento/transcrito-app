@@ -12,9 +12,20 @@ from src.domain.transcription_errors import ModelLoadError, TranscriptionExecuti
 
 
 def _create_service(service_factory, model_name: str, device: str, language: str):
-    if hasattr(service_factory, "transcribe"):
-        return service_factory
-    return service_factory(model_name=model_name, device=device, language=language)
+    # If a class was passed (e.g. WhisperTranscriptionService), instantiate it.
+    # If a factory function was passed, call it. If an instance was passed,
+    # return it directly.
+    from inspect import isclass
+
+    if isclass(service_factory):
+        return service_factory(model_name=model_name, device=device, language=language)
+
+    if callable(service_factory) and not hasattr(service_factory, "transcribe"):
+        # factory function
+        return service_factory(model_name=model_name, device=device, language=language)
+
+    # assume it's already an instance with a `transcribe` method
+    return service_factory
 
 
 def run(service_factory):

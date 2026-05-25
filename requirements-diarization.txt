@@ -1,0 +1,14 @@
+# Optional extras for diarization and advanced audio pipelines
+# Install only if you plan to run diarization providers (pyannote, whisperx, etc.)
+# These packages can be heavy and may require specific system setup.
+
+# pyannote.audio (for speaker diarization) - follow pyannote installation docs
+# pip install pyannote.audio
+
+# whisperx offers enhanced diarization/align features
+# pip install git+https://github.com/m-bain/whisperX.git
+
+# common audio processing helpers
+librosa
+soundfile
+ffmpeg-python

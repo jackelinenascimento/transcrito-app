@@ -1,2 +1,7 @@
 openai-whisper>=20231117
 torch
+ 
+# Optional extra requirements for diarization and advanced pipelines.
+# Install them only if you plan to use a diarization provider (pyannote,
+# whisperx) or advanced audio processing.
+# pip install -r requirements-diarization.txt
