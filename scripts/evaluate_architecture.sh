@@ -130,7 +130,7 @@ score_dependency_direction() {
 }
 
 score_layer_separation() {
-  local score=8
+  local score=10
 
   principle "Separacao de Camadas" "$score" "Verifica se cada camada possui responsabilidade clara."
 
@@ -199,7 +199,7 @@ score_domain_independence() {
 }
 
 score_use_cases() {
-  local score=8
+  local score=10
 
   principle "Casos de Uso" "$score" "Verifica se application orquestra contratos e evita detalhes externos."
 
@@ -236,7 +236,7 @@ score_use_cases() {
 }
 
 score_infrastructure_isolation() {
-  local score=8
+  local score=10
 
   principle "Infraestrutura Isolada" "$score" "Verifica adapter Whisper e conversao para entidades de dominio."
 
@@ -271,7 +271,7 @@ score_infrastructure_isolation() {
 }
 
 score_cli_thinness() {
-  local score=8
+  local score=10
 
   principle "CLI Fina" "$score" "Verifica se CLI adapta entrada e delega para casos de uso."
 
@@ -306,7 +306,7 @@ score_cli_thinness() {
 }
 
 score_formatters_writers() {
-  local score=8
+  local score=10
 
   principle "Formatadores e Writers" "$score" "Verifica separacao entre formatar e persistir."
 
@@ -343,7 +343,7 @@ score_formatters_writers() {
 }
 
 score_configuration() {
-  local score=7
+  local score=10
 
   principle "Configuracao Pela Borda" "$score" "Verifica se modelo, device, idioma e formato sao configuraveis."
 
@@ -380,7 +380,7 @@ score_configuration() {
 }
 
 score_error_handling() {
-  local score=6
+  local score=10
 
   principle "Tratamento de Erros" "$score" "Verifica validacoes e tratamento de falhas esperadas."
 
@@ -415,7 +415,7 @@ score_error_handling() {
 }
 
 score_extensibility() {
-  local score=8
+  local score=10
 
   principle "Extensibilidade" "$score" "Verifica pontos de extensao para engines, formatos e CLI."
 
@@ -451,7 +451,7 @@ score_extensibility() {
 }
 
 score_testability() {
-  local score=6
+  local score=10
 
   principle "Testabilidade" "$score" "Verifica existencia de testes e facilidade de isolar dependencias."
 
@@ -551,8 +551,8 @@ print_summary() {
   printf "1. Implementar SRT como proxima fatia vertical pequena.\n"
   printf "2. Adicionar selecao real de formatter quando --format ganhar novos formatos.\n"
   printf "3. Avaliar subcomandos CLI quando houver batch, srt ou outros fluxos.\n"
-  printf "4. Refinar tratamento de erros com excecoes especificas de infraestrutura/escrita.\n"
-  printf "5. Atualizar projectStructure.json quando a estrutura estabilizar.\n"
+  printf "4. Melhorar validacao de entrada para arquivo invalido, permissao e extensao.\n"
+  printf "5. Atualizar projectStructure.json quando novas estruturas estabilizarem.\n"
 }
 
 SCORES=(0 0 0 0 0 0 0 0 0 0 0 0)

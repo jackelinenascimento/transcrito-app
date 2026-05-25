@@ -540,6 +540,12 @@ Contrato implicito de escrita:
 - entrada: conteudo `str` e destino `Path`;
 - efeito: cria/sobrescreve arquivo em UTF-8.
 
+Erros esperados:
+
+- `ModelLoadError`: falha ao carregar o modelo de transcricao na infraestrutura;
+- `TranscriptionExecutionError`: falha durante a execucao da transcricao;
+- `FileWriteError`: falha ao escrever o arquivo de saida.
+
 ## Decisoes Atuais Importantes
 
 - O modelo Whisper padrao e `base`.
@@ -555,13 +561,8 @@ Contrato implicito de escrita:
 
 Riscos atuais:
 
-- Sem testes automatizados.
-- Sem tratamento de erro ao carregar modelo Whisper.
-- Sem tratamento de erro durante transcricao.
-- Sem verificacao explicita de `ffmpeg`.
 - `warnings.filterwarnings("ignore")` e global e pode esconder problemas.
 - CLI tem textos fixos sobre engine/dispositivo.
-- `FileWriter` e uma dependencia concreta no caso de uso.
 - `outputs/`, `.idea/`, `requirements.txt` e `projectStructure.json` aparecem como nao rastreados no estado atual do Git.
 
 Melhorias provaveis:
@@ -659,4 +660,3 @@ src/application/writers/base_writer.py
 - Colocar regras de CLI dentro das entidades.
 - Adicionar dependencias pesadas sem atualizar `requirements.txt` e documentacao.
 - Rodar transcricao real como teste automatizado padrao.
-

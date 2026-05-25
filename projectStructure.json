@@ -68,6 +68,10 @@
           "responsibility": "Define o contrato abstrato para servicos de transcricao."
         },
         {
+          "path": "src/domain/transcription_errors.py",
+          "responsibility": "Define excecoes especificas para falhas do servico de transcricao."
+        },
+        {
           "path": "src/domain/__init__.py",
           "responsibility": "Marca o pacote de dominio."
         }
@@ -110,6 +114,14 @@
           "path": "src/application/writers",
           "responsibility": "Componentes de persistencia de saida da aplicacao.",
           "files": [
+            {
+              "path": "src/application/writers/base_writer.py",
+              "responsibility": "Define o contrato TextWriter para estrategias de escrita."
+            },
+            {
+              "path": "src/application/writers/errors.py",
+              "responsibility": "Define excecoes especificas para falhas de escrita."
+            },
             {
               "path": "src/application/writers/file_writer.py",
               "responsibility": "Escreve o texto formatado em arquivo."

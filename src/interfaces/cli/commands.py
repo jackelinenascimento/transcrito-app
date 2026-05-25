@@ -6,7 +6,9 @@ from pathlib import Path
 from src.application.formatters.timestamp_formatter import TimestampFormatter
 from src.application.transcribe_video import TranscribeVideo
 from src.application.writers.file_writer import FileWriter
+from src.application.writers.errors import WriteError
 from src.application.utils.time_formatter import format_duration
+from src.domain.transcription_errors import ModelLoadError, TranscriptionExecutionError
 
 
 def _create_service(service_factory, model_name: str, device: str, language: str):
@@ -54,15 +56,23 @@ def run(service_factory):
 
     start_time = time.perf_counter()
 
-    service = _create_service(service_factory, args.model, args.device, args.language)
+    try:
+        service = _create_service(service_factory, args.model, args.device, args.language)
+    except ModelLoadError as exc:
+        print(f"❌ Could not load transcription model: {exc}")
+        return
+
     formatter = TimestampFormatter()
     writer = FileWriter()
     use_case = TranscribeVideo(service, formatter, writer)
 
     try:
         output_file = use_case.execute(str(video_path), output_dir)
-    except Exception as exc:
+    except TranscriptionExecutionError as exc:
         print(f"❌ Transcription failed: {exc}")
+        return
+    except WriteError as exc:
+        print(f"❌ Could not write output file: {exc}")
         return
 
     duration = time.perf_counter() - start_time

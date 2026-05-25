@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from src.application.writers.errors import FileWriteError
+from src.domain.transcription_errors import ModelLoadError, TranscriptionExecutionError
 from src.domain.transcription import Transcription, TranscriptionSegment
 from src.interfaces.cli.commands import run
 
@@ -37,7 +39,13 @@ class FakeTranscriptionServiceFactory:
 class FailingTranscriptionService:
 
     def transcribe(self, video_path: str) -> Transcription:
-        raise RuntimeError("engine unavailable")
+        raise TranscriptionExecutionError("engine unavailable")
+
+
+class FailingTranscriptionServiceFactory:
+
+    def __call__(self, **kwargs):
+        raise ModelLoadError("model unavailable")
 
 
 class CliRunTest(unittest.TestCase):
@@ -182,6 +190,49 @@ class CliRunTest(unittest.TestCase):
                 run(FailingTranscriptionService())
 
         self.assertIn("Transcription failed: engine unavailable", stdout.getvalue())
+
+    def test_returns_when_model_cannot_be_loaded(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            video_path = Path(temp_dir) / "sample.mp4"
+            video_path.write_text("not a real video", encoding="utf-8")
+
+            with patch("sys.argv", ["transcrito", str(video_path)]), patch(
+                "shutil.which",
+                return_value="/usr/bin/ffmpeg",
+            ), patch(
+                "time.perf_counter",
+                return_value=1.0,
+            ), patch(
+                "sys.stdout",
+                new_callable=io.StringIO,
+            ) as stdout:
+                run(FailingTranscriptionServiceFactory())
+
+        self.assertIn("Could not load transcription model: model unavailable", stdout.getvalue())
+
+    def test_returns_when_output_file_cannot_be_written(self):
+        service = FakeTranscriptionService()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            video_path = Path(temp_dir) / "sample.mp4"
+            video_path.write_text("not a real video", encoding="utf-8")
+
+            with patch("sys.argv", ["transcrito", str(video_path)]), patch(
+                "shutil.which",
+                return_value="/usr/bin/ffmpeg",
+            ), patch(
+                "time.perf_counter",
+                return_value=1.0,
+            ), patch(
+                "src.application.writers.file_writer.FileWriter.write",
+                side_effect=FileWriteError("permission denied"),
+            ), patch(
+                "sys.stdout",
+                new_callable=io.StringIO,
+            ) as stdout:
+                run(service)
+
+        self.assertIn("Could not write output file: permission denied", stdout.getvalue())
 
 
 if __name__ == "__main__":

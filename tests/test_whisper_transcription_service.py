@@ -22,6 +22,20 @@ class WhisperTranscriptionServiceTest(unittest.TestCase):
         fake_whisper.load_model.assert_called_once_with("tiny", device="cuda")
         self.assertIs(service.model, model)
 
+    def test_wraps_model_load_failure(self):
+        fake_whisper = types.SimpleNamespace(
+            load_model=Mock(side_effect=RuntimeError("model unavailable")),
+        )
+
+        with patch.dict(sys.modules, {"whisper": fake_whisper}):
+            module = importlib.import_module("src.infrastructure.whisper_transcription_service")
+
+            with self.assertRaises(module.ModelLoadError) as context:
+                module.WhisperTranscriptionService("large", device="cuda")
+
+        self.assertIn("Could not load Whisper model 'large'", str(context.exception))
+        self.assertIsInstance(context.exception.__cause__, RuntimeError)
+
     def test_converts_whisper_result_to_domain_transcription_with_configured_language(self):
         model = Mock()
         model.transcribe.return_value = {
@@ -47,6 +61,21 @@ class WhisperTranscriptionServiceTest(unittest.TestCase):
         self.assertEqual(transcription.segments[0].text, "First")
         self.assertEqual(transcription.segments[0].start, 0.0)
         self.assertEqual(transcription.segments[0].end, 1.5)
+
+    def test_wraps_transcription_failure(self):
+        model = Mock()
+        model.transcribe.side_effect = RuntimeError("ffmpeg failed")
+        fake_whisper = types.SimpleNamespace(load_model=Mock(return_value=model))
+
+        with patch.dict(sys.modules, {"whisper": fake_whisper}):
+            module = importlib.import_module("src.infrastructure.whisper_transcription_service")
+            service = module.WhisperTranscriptionService("base", language="pt")
+
+            with self.assertRaises(module.TranscriptionExecutionError) as context:
+                service.transcribe("video.mp4")
+
+        self.assertIn("Could not transcribe 'video.mp4'", str(context.exception))
+        self.assertIsInstance(context.exception.__cause__, RuntimeError)
 
 
 if __name__ == "__main__":
