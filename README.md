@@ -106,7 +106,10 @@ python -m src.main videos/test.mp4 --out outputs --model base --device cpu --lan
 - `--model`: modelo Whisper, padrao `base`
 - `--device`: device usado pelo Whisper, padrao `cpu`
 - `--language`: idioma da transcricao, padrao `pt`
-- `--format`: formato de saida, atualmente `txt`
+- `--format`: formato de saida, agora suporta `txt` e `srt` (legendas)
+- `--diarize`: solicita diarizacao ao motor de transcricao quando disponivel; caso o motor nao retorne labels, o app usa uma heuristica de pausa como fallback (boolean)
+- `--gap-threshold`: limiar em segundos para considerar uma pausa como indicativa de novo locutor quando usando heuristica (padrão 1.5)
+- `--max-speakers`: numero maximo de speakers que a heuristica deve criar (0 = ilimitado)
 
 A saída será gerada em:
 

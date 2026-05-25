@@ -30,6 +30,7 @@ class WhisperTranscriptionService(TranscriptionService):
                     start=s["start"],
                     end=s["end"],
                     text=s["text"].strip(),
+                    speaker=s.get("speaker"),
                 )
                 for s in result["segments"]
             ]

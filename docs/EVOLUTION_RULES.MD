@@ -111,6 +111,10 @@ Exemplo bom para `SRT`:
 4. Atualizar README/docs.
 5. Adicionar testes do formatter se houver suite de testes.
 
+Regra adicional para diarizacao:
+
+- prefira integrar diarizacao como um provider na camada `infrastructure` que retorna `speaker` por segmento; apenas quando esse provider nao estiver disponivel, a camada `application` pode aplicar uma heuristica local (por exemplo pausa > `gap_threshold` para detectar novo locutor). Documente claramente e cubra com testes.
+
 Exemplo ruim:
 
 - criar varias interfaces genericas de legenda, exportacao, pipeline e storage sem nenhuma saida SRT funcionando.

@@ -21,8 +21,8 @@ class TimestampFormatterTest(unittest.TestCase):
         transcription = Transcription(
             text="Hello world",
             segments=[
-                TranscriptionSegment(start=0, end=2.5, text=" First line "),
-                TranscriptionSegment(start=65, end=70, text="Second line"),
+                TranscriptionSegment(start=0, end=2.5, text=" First line ", speaker=None),
+                TranscriptionSegment(start=65, end=70, text="Second line", speaker="Speaker 1"),
             ],
             language="en",
         )
@@ -31,7 +31,7 @@ class TimestampFormatterTest(unittest.TestCase):
 
         self.assertEqual(
             formatted,
-            "[00:00]\nFirst line\n\n[01:05]\nSecond line\n",
+            "[00:00]\nFirst line\n\n[01:05]\nSpeaker 1:\nSecond line\n",
         )
 
     def test_formats_empty_transcription_as_empty_text(self):

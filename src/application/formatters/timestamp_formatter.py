@@ -15,7 +15,14 @@ class TimestampFormatter(TranscriptionFormatter):
         for segment in transcription.segments:
             timestamp = format_timestamp(segment.start)
             lines.append(f"[{timestamp}]")
+            # optionally include speaker label if available
+            if getattr(segment, "speaker", None):
+                lines.append(f"{segment.speaker}:")
             lines.append(segment.text.strip())
             lines.append("")
+
+        # if there are no segments, return empty string
+        if not lines:
+            return ""
 
         return "\n".join(lines)

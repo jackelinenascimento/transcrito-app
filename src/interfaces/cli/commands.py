@@ -24,7 +24,10 @@ def run(service_factory):
     parser.add_argument("--model", default="base", help="Whisper model name")
     parser.add_argument("--device", default="cpu", help="Device used by Whisper")
     parser.add_argument("--language", default="pt", help="Transcription language")
-    parser.add_argument("--format", default="txt", choices=["txt"], help="Output format")
+    parser.add_argument("--format", default="txt", choices=["txt", "srt"], help="Output format")
+    parser.add_argument("--diarize", action="store_true", help="Request diarization from the transcription service or enable heuristic speaker separation")
+    parser.add_argument("--gap-threshold", type=float, default=1.5, help="Gap threshold in seconds to consider a new speaker when using heuristic")
+    parser.add_argument("--max-speakers", type=int, default=0, help="Maximum number of speakers to assign with heuristic (0 = unlimited)")
 
     args = parser.parse_args()
 
@@ -62,9 +65,31 @@ def run(service_factory):
         print(f"❌ Could not load transcription model: {exc}")
         return
 
-    formatter = TimestampFormatter()
+    if args.format == "srt":
+        from src.application.formatters.srt_formatter import SrtFormatter
+
+        formatter = SrtFormatter()
+    else:
+        formatter = TimestampFormatter()
     writer = FileWriter()
-    use_case = TranscribeVideo(service, formatter, writer)
+    diarization_provider = None
+    if args.diarize:
+        try:
+            from src.infrastructure.diarization_provider import StubDiarizationProvider
+
+            diarization_provider = StubDiarizationProvider()
+        except Exception:
+            diarization_provider = None
+
+    use_case = TranscribeVideo(
+        service,
+        formatter,
+        writer,
+        diarize=args.diarize,
+        gap_threshold=args.gap_threshold,
+        max_speakers=args.max_speakers,
+        diarization_provider=diarization_provider,
+    )
 
     try:
         output_file = use_case.execute(str(video_path), output_dir)

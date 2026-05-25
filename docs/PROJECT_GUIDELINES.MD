@@ -156,12 +156,20 @@ Valores atuais importantes:
 - diretorio de saida: `outputs`;
 - formato de saida padrao: texto com timestamps.
 
+Novas opcoes/flags relevantes:
+
+- `--format`: agora suporta `txt` e `srt` (para gerar legendas);
+- `--diarize`: solicita diarizacao ao motor de transcricao quando disponivel; caso o motor nao retorne labels, o app usa uma heuristica de pausa como fallback;
+- `--gap-threshold`: limiar em segundos para heuristica de pausa (default 1.5s);
+- `--max-speakers`: limite de speakers criados pela heuristica (0 = ilimitado).
+
 Boas praticas:
 
 - nao espalhe valores fixos por varios arquivos;
 - se um valor passar a ser configuravel, escolha a borda correta para recebe-lo, normalmente CLI ou composition root;
 - mantenha defaults compativeis com o comportamento atual;
 - documente novas flags no README quando forem expostas para usuario.
+ - documente novas flags no README quando forem expostas para usuario.
 
 ## Tratamento de Erros
 

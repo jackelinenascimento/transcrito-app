@@ -62,6 +62,38 @@ class TranscribeVideoTest(unittest.TestCase):
         self.assertEqual(writer.output_path, output_path)
         self.assertEqual(output_path.name, "example.video.txt")
 
+    def test_assigns_default_speakers_when_none_present(self):
+        # service returns two segments with a long pause -> expect speaker toggle
+        class ServiceNoSpeaker:
+            def transcribe(self, video_path: str):
+                return Transcription(
+                    text="Three segments",
+                    segments=[
+                        TranscriptionSegment(start=0, end=1, text="Hello"),
+                        TranscriptionSegment(start=5, end=6, text="Hi again"),
+                        TranscriptionSegment(start=12, end=13, text="Another speaker"),
+                    ],
+                    language="en",
+                )
+
+        service = ServiceNoSpeaker()
+        formatter = FakeFormatter()
+        writer = FakeWriter()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_dir = Path(temp_dir)
+
+            output_path = TranscribeVideo(service, formatter, writer).execute(
+                "videos/example.video.mp4",
+                output_dir,
+            )
+
+        # after execution, formatter.transcription should have speaker labels
+        segs = formatter.transcription.segments
+        self.assertEqual(segs[0].speaker, "Speaker 1")
+        self.assertEqual(segs[1].speaker, "Speaker 2")
+        self.assertEqual(segs[2].speaker, "Speaker 3")
+
 
 if __name__ == "__main__":
     unittest.main()

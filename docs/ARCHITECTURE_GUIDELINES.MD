@@ -12,6 +12,7 @@ Objetivos declarados no repositório:
 - manter o dominio independente de bibliotecas externas como Whisper;
 - permitir novos motores de transcricao;
 - permitir novos formatos de saida, como SRT;
+- permitir diarização (speaker separation) como comportamento padrão ao executar a transcrição;
 - preparar a base para processamento em lote, interface web, workers assincronos, cache e busca.
 
 Comando principal esperado:
@@ -126,7 +127,7 @@ src/interfaces/cli/commands.py
   -> parseia argumentos com argparse
   -> valida existencia do video
   -> cria diretorio de saida
-  -> instancia TimestampFormatter
+  -> instancia TimestampFormatter ou SrtFormatter dependendo de --format
   -> instancia FileWriter
   -> instancia TranscribeVideo(service, formatter, writer)
   -> executa o caso de uso
@@ -140,8 +141,9 @@ src/application/transcribe_video.py
 
 src/infrastructure/whisper_transcription_service.py
   -> carrega modelo Whisper
-  -> transcreve video em portugues
+  -> transcreve video (idioma configuravel)
   -> converte retorno bruto para entidades de dominio
+  -> se o motor fornecer labels de speaker, eles devem ser convertidos para o campo `speaker` dos segmentos
 ```
 
 ## Camadas e Responsabilidades
@@ -198,6 +200,11 @@ Arquivo principal:
 
 - `transcribe_video.py`: caso de uso `TranscribeVideo`.
 
+Novas responsabilidades relevantes:
+
+- ao orquestrar a transcricao, o caso de uso tambem pode aplicar uma heuristica de atribuicao de speakers quando o motor de transcricao nao fornecer labels;
+- o caso de uso recebe configuracoes como `diarize`, `gap_threshold` e `max_speakers` injetadas pela CLI/composition root;
+
 Padrao atual de caso de uso:
 
 - classe com dependencias recebidas no construtor;
@@ -211,10 +218,13 @@ Assinatura atual:
 ```python
 class TranscribeVideo:
     def __init__(
-            self,
-            service: TranscriptionService,
-            formatter: TranscriptionFormatter,
-            writer: FileWriter
+      self,
+      service: TranscriptionService,
+      formatter: TranscriptionFormatter,
+      writer: FileWriter,
+      diarize: bool = False,
+      gap_threshold: float = 1.5,
+      max_speakers: int = 0,
     ):
         ...
 
@@ -249,6 +259,10 @@ Implementacao atual:
 
 - `TimestampFormatter`: gera texto com blocos contendo timestamp e trecho.
 
+Implementacoes adicionais:
+
+- `SrtFormatter`: gera legendas no formato SRT e inclui rótulos de speaker quando presentes no segmento.
+
 Formato atual aproximado:
 
 ```text
@@ -274,6 +288,11 @@ Cuidados:
 - para SRT, crie outro formatter, por exemplo `SrtFormatter`, sem alterar o contrato base se `str` continuar suficiente;
 - nao coloque escrita em arquivo dentro do formatter;
 - nao coloque chamadas ao Whisper dentro do formatter.
+
+Ao adicionar diarizacao:
+
+- prefira implementar a diarizacao no nivel de infraestrutura (um provider que rode pyannote/whisperx), que retorna `speaker` em cada segmento; a camada `application` deve apenas escolher usar os labels do provider ou aplicar a heuristica de fallback;
+- se preferir uma heuristica leve, coloque-a no caso de uso `TranscribeVideo` (ja existe uma implementada que atribui `Speaker N` incrementais quando ha pausas maiores que `gap_threshold`).
 
 ### `src/application/writers`
 

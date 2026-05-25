@@ -86,7 +86,7 @@ class CliRunTest(unittest.TestCase):
             output_file = output_dir / "sample.txt"
 
             self.assertEqual(service.video_path, str(video_path))
-            self.assertEqual(output_file.read_text(encoding="utf-8"), "[00:00]\nSegment text\n")
+            self.assertEqual(output_file.read_text(encoding="utf-8"), "[00:00]\nSpeaker 1:\nSegment text\n")
             self.assertIn("Done", stdout.getvalue())
             self.assertIn(str(output_file), stdout.getvalue())
 
