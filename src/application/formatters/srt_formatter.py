@@ -18,11 +18,8 @@ class SrtFormatter(TranscriptionFormatter):
             start_ts = _format_srt_timestamp(seg.start)
             end_ts = _format_srt_timestamp(seg.end)
             lines.append(str(i))
-            # include speaker label if present
-            if getattr(seg, "speaker", None):
-                lines.append(f"{start_ts} --> {end_ts}")
-            else:
-                lines.append(f"{start_ts} --> {end_ts}")
+            # timestamp line
+            lines.append(f"{start_ts} --> {end_ts}")
             if getattr(seg, "speaker", None):
                 lines.append(f"{seg.speaker}: {seg.text.strip()}")
             else:
