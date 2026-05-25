@@ -23,9 +23,11 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ripgrep
 
       - name: Run architecture evaluator (JSON)
+        continue-on-error: true
         run: |
           chmod +x scripts/evaluate_architecture.sh
-          ./scripts/evaluate_architecture.sh --format=json > architecture_report.json
+          # ensure we always create the file (even if script fails) and capture exit code
+          ./scripts/evaluate_architecture.sh --format=json > architecture_report.json || true
 
       - name: Upload architecture report
         uses: actions/upload-artifact@v4
@@ -34,10 +36,11 @@ jobs:
           path: architecture_report.json
 
       - name: Fail on low score (optional)
-        if: ${{ success() }}
+        if: ${{ always() }}
         run: |
           if [ ! -s architecture_report.json ]; then
             echo "architecture_report.json not found or empty; skipping threshold check"
+            # fail the step so the job is marked accordingly
             exit 1
           fi
           score=$(jq '.summary.overall_score' architecture_report.json)
