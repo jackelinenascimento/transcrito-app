@@ -29,10 +29,15 @@ Estrutura:
 src/
   domain/
     transcription.py
+    transcription_errors.py
     transcription_service.py
 
   application/
     transcribe_video.py
+    writers/
+      base_writer.py
+      errors.py
+      file_writer.py
 
   infrastructure/
     whisper_transcription_service.py
@@ -110,6 +115,18 @@ outputs/
 ```
 
 O arquivo conterá a transcrição completa.
+
+## Tratamento de Erros
+
+A CLI valida entradas antes de iniciar trabalho pesado e mostra mensagens claras para falhas esperadas.
+
+Falhas de infraestrutura e escrita sao convertidas para excecoes especificas:
+
+- `ModelLoadError`: erro ao carregar o modelo de transcricao;
+- `TranscriptionExecutionError`: erro durante a transcricao;
+- `FileWriteError`: erro ao escrever o arquivo de saida.
+
+Isso evita depender de `Exception` generico na interface e preserva a causa tecnica para diagnostico.
 
 ## Modelo de Domínio
 

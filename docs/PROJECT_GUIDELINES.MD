@@ -165,7 +165,7 @@ Boas praticas:
 
 ## Tratamento de Erros
 
-O projeto ainda tem tratamento de erros simples. Ao melhorar:
+O projeto deve tratar falhas esperadas com excecoes explicitas por camada. Ao melhorar:
 
 - retorne mensagens claras para o usuario na CLI;
 - preserve excecoes tecnicas para logs ou diagnostico quando necessario;
@@ -173,6 +173,15 @@ O projeto ainda tem tratamento de erros simples. Ao melhorar:
 - nao esconda falhas silenciosamente;
 - evite `except Exception` generico sem uma acao clara;
 - prefira erros especificos para arquivo inexistente, dependencia ausente, modelo indisponivel e falha de transcricao.
+- traduza falhas de bibliotecas externas na borda de infraestrutura;
+- traduza falhas de escrita dentro do writer responsavel;
+- capture na CLI os erros especificos que o usuario consegue entender e agir.
+
+Excecoes atuais:
+
+- `ModelLoadError`: falha ao carregar o modelo de transcricao na infraestrutura;
+- `TranscriptionExecutionError`: falha durante a execucao da transcricao;
+- `FileWriteError`: falha ao escrever o arquivo de saida.
 
 Areas que merecem cuidado:
 
