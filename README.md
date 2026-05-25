@@ -1,190 +1,138 @@
 # Transcrito App
 
-Ferramenta CLI para transcrição de vídeos utilizando Whisper com uma estrutura baseada em Clean Architecture.
+Ferramenta de linha de comando (CLI) para transcrição de vídeo para texto usando Whisper, organizada segundo princípios de Clean Architecture.
 
-O projeto foi criado para estudar design de software, modelagem de domínio e pipelines de IA, mantendo a base preparada para evoluir para uma aplicação completa com interface web, múltiplos engines e processamento assíncrono.
+## Sumário
+
+- [Visão geral](#visão-geral)
+- [Funcionalidades](#funcionalidades)
+- [Requisitos](#requisitos)
+- [Instalação rápida](#instalação-rápida)
+- [Uso](#uso)
+- [Opções principais](#opções-principais)
+- [Estrutura do projeto](#estrutura-do-projeto)
+- [Desenvolvimento e testes](#desenvolvimento-e-testes)
+- [Documentação adicional](#documentação-adicional)
+- [Contribuição](#contribuição)
+- [Licença](#licença)
+
+## Visão geral
+
+O projeto fornece um pipeline simples para transcrever vídeos em texto, gerar legendas (SRT) e experimentar estratégias de diariização (speaker diarization). O código segue Clean Architecture: o domínio é independente de frameworks e das implementações concretas de transcrição.
 
 ## Funcionalidades
 
-• Transcrição de arquivos de vídeo para texto
-• Separação por Clean Architecture (domain, application, infrastructure, interfaces)
-• Estrutura preparada para processamento em lote
-• Entidade de domínio com segmentos e timestamps
-• Base pronta para geração de legendas (SRT)
-• Fácil extensão para outros engines de transcrição
-
-## Arquitetura
-
-O projeto segue princípios de Clean Architecture.
-
-O núcleo não depende de bibliotecas externas como Whisper.
-
-Fluxo:
-
-CLI → Caso de uso → Serviço de transcrição (contrato) → Implementação Whisper → Entidade de domínio → Saída
-
-Estrutura:
-
-```
-src/
-  domain/
-    transcription.py
-    transcription_errors.py
-    transcription_service.py
-
-  application/
-    transcribe_video.py
-    writers/
-      base_writer.py
-      errors.py
-      file_writer.py
-
-  infrastructure/
-    whisper_transcription_service.py
-
-  interfaces/
-    cli/
-      commands.py
-
-  main.py
-```
+- Transcrição de arquivos de vídeo para texto
+- Geração de arquivos de legenda no formato SRT
+- Separação por camadas (domain, application, infrastructure, interfaces)
+- Extensível para múltiplos motores de transcrição
+- Heurística de fallback para diarização quando não disponível
 
 ## Requisitos
 
-Python 3.10+
+- Python 3.10+
+- ffmpeg (para extrair/normalizar áudio de vídeos)
 
-Dependência de sistema:
+No Ubuntu/Debian:
 
-```
-ffmpeg
-```
-
-Instalação no Ubuntu:
-
-```
+```bash
+sudo apt update
 sudo apt install ffmpeg
 ```
 
-Dependências Python:
+## Instalação rápida
 
-```
-pip install -r requirements.txt
-```
+1. Crie e ative um ambiente virtual:
 
-## Setup
-
-Criar ambiente virtual:
-
-```
+```bash
 python -m venv .venv
 source .venv/bin/activate
 ```
 
-Instalar dependências:
+2. Instale dependências principais:
 
-```
+```bash
 pip install -r requirements.txt
 ```
 
-Se voce pretende usar diarizacao avançada (pyannote, whisperx) ou pipelines de audio
-mais sofisticadas, instale as dependencias opcionais:
+3. (Opcional) Dependências para diarização avançada:
 
-```
-# Instala as dependencias opcionais para diarizacao (pesadas)
+```bash
 pip install -r requirements-diarization.txt
 ```
 
 ## Uso
 
-Coloque um vídeo na pasta `videos` ou passe o caminho diretamente.
+Coloque um vídeo na pasta `videos/` ou passe o caminho para o arquivo. Exemplos:
 
-Executar:
+Transcrever um arquivo e gerar saída em `outputs/` (padrão):
 
-```
-python -m src.main videos/test.mp4
-```
-
-Opcoes disponiveis:
-
-```
-python -m src.main videos/test.mp4 --out outputs --model base --device cpu --language pt --format txt
+```bash
+python -m src.main videos/test.mkv
 ```
 
-- `--out`: diretorio de saida, padrao `outputs`
-- `--model`: modelo Whisper, padrao `base`
-- `--device`: device usado pelo Whisper, padrao `cpu`
-- `--language`: idioma da transcricao, padrao `pt`
-- `--format`: formato de saida, agora suporta `txt` e `srt` (legendas)
-- `--diarize`: solicita diarizacao ao motor de transcricao quando disponivel; caso o motor nao retorne labels, o app usa uma heuristica de pausa como fallback (boolean)
-- `--gap-threshold`: limiar em segundos para considerar uma pausa como indicativa de novo locutor quando usando heuristica (padrão 1.5)
-- `--max-speakers`: numero maximo de speakers que a heuristica deve criar (0 = ilimitado)
+Exemplo com opções:
 
-A saída será gerada em:
-
-```
-outputs/
+```bash
+python -m src.main videos/test.mkv --out outputs --model base --device cpu --language pt --format srt
 ```
 
-O arquivo conterá a transcrição completa.
+## Opções principais
 
-## Tratamento de Erros
+- `--out`: diretório de saída (padrão `outputs`)
+- `--model`: modelo Whisper a ser usado (ex.: `tiny`, `base`, `small`)
+- `--device`: dispositivo para inferência (`cpu` ou `cuda`)
+- `--language`: idioma da transcrição (`pt`, `en`, ...)
+- `--format`: formato de saída (`txt`, `srt`)
+- `--diarize`: ativa diarização quando suportada pelo provedor
+- `--gap-threshold`: limiar (s) para heurística de novo locutor (padrão 1.5)
+- `--max-speakers`: máximo de speakers para heurística (0 = ilimitado)
 
-A CLI valida entradas antes de iniciar trabalho pesado e mostra mensagens claras para falhas esperadas.
+Para ver todas as opções, execute o comando sem argumentos ou com `-h`:
 
-Falhas de infraestrutura e escrita sao convertidas para excecoes especificas:
+```bash
+python -m src.main -h
+```
 
-- `ModelLoadError`: erro ao carregar o modelo de transcricao;
-- `TranscriptionExecutionError`: erro durante a transcricao;
-- `FileWriteError`: erro ao escrever o arquivo de saida.
+## Estrutura do projeto
 
-Isso evita depender de `Exception` generico na interface e preserva a causa tecnica para diagnostico.
+A organização principal está em `src/` seguindo Clean Architecture. Um resumo das pastas:
 
-## Modelo de Domínio
+- `src/domain/` — entidades, contratos e exceções do domínio
+- `src/application/` — casos de uso e formatadores (SRT, timestamp)
+- `src/infrastructure/` — implementações concretas (ex.: Whisper)
+- `src/interfaces/cli/` — adaptadores de entrada (CLI)
+- `docs/` — documentação do projeto e guias
 
-A entidade principal é `Transcription`.
+O arquivo `projectStructure.json` contém uma visão estruturada do repositório.
 
-Ela contém:
+## Desenvolvimento e testes
 
-• texto completo
-• idioma
-• segmentos com tempo de início e fim
+Instale dependências de desenvolvimento (opcional):
 
-Isso permite evoluções como legendas, busca por trecho, resumo e edição de vídeo.
+```bash
+pip install -r requirements-dev.txt
+```
 
-## Próximos Passos (Roadmap)
+Rode a suíte de testes:
 
-Curto prazo:
+```bash
+pytest -q
+```
 
-• Geração de legendas SRT
-• Processamento de pasta inteira
-• Subcomandos CLI
-• Barra de progresso
-• Fallback automático GPU/CPU
+## Documentação adicional
 
-Médio prazo:
+A pasta `docs/` contém guidelines de arquitetura, regras do projeto e documentos auxiliares. Veja `docs/README.md` para um índice da documentação interna.
 
-• Múltiplos engines de transcrição
-• Workers assíncronos
-• Cache
-• Interface com FastAPI
+## Contribuição
 
-Longo prazo:
-
-• Plataforma SaaS
-• Base de conhecimento em vídeo
-• Busca semântica
-• Geração automática de highlights
-
-## Objetivo
-
-Este projeto faz parte de uma jornada de estudo focada em:
-
-• Clean Architecture
-• Modelagem de domínio
-• Desenvolvimento assistido por IA
-• Ferramentas CLI
-• Design de sistemas escaláveis
+Contribuições são bem-vindas. Para pequenos ajustes, abra um issue ou envie um pull request. Siga as diretrizes de estilo do projeto (pequenas mudanças primeiro; escreva testes para comportamentos novos/alterados).
 
 ## Licença
 
-MIT
+Este projeto é licenciado sob MIT — veja o arquivo `LICENSE` para detalhes.
+
+
+---
+
+Arquivo gerado/atualizado automaticamente: mantenha o `README.md` em sincronia com `docs/` e `projectStructure.json`.

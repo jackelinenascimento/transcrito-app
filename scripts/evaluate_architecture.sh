@@ -15,6 +15,26 @@ PASS_COUNT=0
 WARN_COUNT=0
 FAIL_COUNT=0
 
+# output format: text (default) or json
+FORMAT="text"
+
+# temporary file to collect issue entries (JSON lines)
+TMP_ISSUES_FILE=""
+
+init_output() {
+  if [[ "$FORMAT" == "json" ]]; then
+    TMP_ISSUES_FILE="$(mktemp)"
+    # ensure file exists
+    : > "$TMP_ISSUES_FILE"
+  fi
+}
+
+cleanup_output() {
+  if [[ -n "$TMP_ISSUES_FILE" && -f "$TMP_ISSUES_FILE" ]]; then
+    rm -f "$TMP_ISSUES_FILE"
+  fi
+}
+
 has_file() {
   [[ -f "$1" ]]
 }
@@ -23,57 +43,105 @@ has_dir() {
   [[ -d "$1" ]]
 }
 
+LAST_MATCHES=""
+
 contains() {
   local pattern="$1"
   shift
+
+  LAST_MATCHES=""
 
   if [[ "$#" -eq 0 ]]; then
     return 1
   fi
 
   if command -v rg >/dev/null 2>&1; then
-    rg -q -- "$pattern" "$@"
+    # capture up to first 20 matches with filename:line:match
+    LAST_MATCHES="$(rg -n --color=never -- "$pattern" "$@" 2>/dev/null | sed -n '1,20p')"
+    [[ -n "$LAST_MATCHES" ]]
     return
   fi
 
-  grep -R -E -q -- "$pattern" "$@" 2>/dev/null
+  LAST_MATCHES="$(grep -R -n -E -- "$pattern" "$@" 2>/dev/null | sed -n '1,20p')"
+  [[ -n "$LAST_MATCHES" ]]
 }
 
 count_matches() {
   local pattern="$1"
   shift
-
   if [[ "$#" -eq 0 ]]; then
     echo 0
     return
   fi
 
   if command -v rg >/dev/null 2>&1; then
-    rg -- "$pattern" "$@" | wc -l | tr -d ' '
+    rg -n --color=never -- "$pattern" "$@" 2>/dev/null | wc -l | tr -d ' '
     return
   fi
 
-  grep -R -E -h -- "$pattern" "$@" 2>/dev/null | wc -l | tr -d ' '
+  grep -R -n -E -h -- "$pattern" "$@" 2>/dev/null | wc -l | tr -d ' '
 }
 
 status_line() {
   local status="$1"
   local message="$2"
 
+  # increment counters
   case "$status" in
     pass)
       PASS_COUNT=$((PASS_COUNT + 1))
-      printf "  [ok] %s\n" "$message"
       ;;
     warn)
       WARN_COUNT=$((WARN_COUNT + 1))
-      printf "  [warn] %s\n" "$message"
       ;;
     fail)
       FAIL_COUNT=$((FAIL_COUNT + 1))
-      printf "  [fail] %s\n" "$message"
       ;;
   esac
+
+  # Human readable output
+  if [[ "$FORMAT" == "text" ]]; then
+    case "$status" in
+      pass)
+        printf "  [ok] %s\n" "$message"
+        ;;
+      warn)
+        printf "  [warn] %s\n" "$message"
+        ;;
+      fail)
+        printf "  [fail] %s\n" "$message"
+        ;;
+    esac
+
+    # If contains() found matches, print them (up to 5 lines) for context
+    if [[ -n "$LAST_MATCHES" ]]; then
+      printf "    Matches (file:line:match) - showing up to 5 lines:\n"
+      echo "$LAST_MATCHES" | sed -n '1,5p' | sed 's/^/      /'
+    fi
+  fi
+
+  # Collect entry for JSON output if requested
+  if [[ "$FORMAT" == "json" || -n "$TMP_ISSUES_FILE" ]]; then
+    # prepare array of matches (split lines)
+    python3 - <<PY >> "$TMP_ISSUES_FILE"
+import json,sys
+entry = {
+  "principle": globals().get('CURRENT_PRINCIPLE',''),
+  "status": "$status",
+  "message": "$message",
+  "matches": []
+}
+matches = ""
+try:
+    matches = '''$LAST_MATCHES'''
+    if matches:
+        entry['matches'] = [m for m in matches.splitlines()]
+except Exception:
+    pass
+json.dump(entry, sys.stdout, ensure_ascii=False)
+sys.stdout.write("\n")
+PY
+  fi
 }
 
 principle() {
@@ -82,6 +150,9 @@ principle() {
   local reason="$3"
 
   TOTAL_ITEMS=$((TOTAL_ITEMS + 1))
+
+  # track current principle for JSON collection
+  CURRENT_PRINCIPLE="$name"
 
   printf "\n## %s\n" "$name"
   printf "%s\n" "$reason"
@@ -98,6 +169,19 @@ print_header() {
   printf "%s\n" "- docs/EVOLUTION_RULES.MD"
   printf "%s\n" "- docs/rules/*.rules.md"
 }
+
+# parse args (simple) - accept --format json
+for arg in "$@"; do
+  case "$arg" in
+    --format=json|--json)
+      FORMAT="json"
+      ;;
+  esac
+done
+
+init_output
+
+trap cleanup_output EXIT
 
 score_dependency_direction() {
   local score=10
@@ -553,6 +637,56 @@ print_summary() {
   printf "3. Avaliar subcomandos CLI quando houver batch, srt ou outros fluxos.\n"
   printf "4. Melhorar validacao de entrada para arquivo invalido, permissao e extensao.\n"
   printf "5. Atualizar projectStructure.json quando novas estruturas estabilizarem.\n"
+
+  # if json requested, emit JSON document combining scores and issues
+  if [[ "$FORMAT" == "json" ]]; then
+  local now
+  now="$(date '+%Y-%m-%d %H:%M:%S')"
+  python3 - <<PY
+import json,sys
+from pathlib import Path
+
+issues = []
+tmp = Path('$TMP_ISSUES_FILE')
+if tmp.exists():
+    for line in tmp.read_text(encoding='utf-8').splitlines():
+        try:
+            issues.append(json.loads(line))
+        except Exception:
+            pass
+
+scores = {
+  'dependency_direction': ${SCORES[0]},
+  'layer_separation': ${SCORES[1]},
+  'domain_independence': ${SCORES[2]},
+  'use_cases': ${SCORES[3]},
+  'infrastructure_isolation': ${SCORES[4]},
+  'cli_thinness': ${SCORES[5]},
+  'formatters_writers': ${SCORES[6]},
+  'configuration': ${SCORES[7]},
+  'error_handling': ${SCORES[8]},
+  'extensibility': ${SCORES[9]},
+  'testability': ${SCORES[10]},
+  'documentation': ${SCORES[11]}
+}
+
+out = {
+  'project': 'transcrito-app',
+  'root': '$ROOT_DIR',
+  'date':  '$now',
+  'summary': {
+    'overall_score': '$average',
+    'pass': $PASS_COUNT,
+    'warn': $WARN_COUNT,
+    'fail': $FAIL_COUNT
+  },
+  'scores': scores,
+  'issues': issues
+}
+
+print(json.dumps(out, ensure_ascii=False, indent=2))
+PY
+  fi
 }
 
 SCORES=(0 0 0 0 0 0 0 0 0 0 0 0)
