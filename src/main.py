@@ -3,8 +3,7 @@ from src.interfaces.cli.commands import run
 
 
 def main():
-    service = WhisperTranscriptionService("base")
-    run(service)
+    run(WhisperTranscriptionService)
 
 
 if __name__ == "__main__":

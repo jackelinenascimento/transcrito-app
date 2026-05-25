@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+if [ -z "${BASH_VERSION:-}" ]; then
+  exec bash "$0" "$@"
+fi
+
 set -u
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -27,7 +31,12 @@ contains() {
     return 1
   fi
 
-  rg -q -- "$pattern" "$@"
+  if command -v rg >/dev/null 2>&1; then
+    rg -q -- "$pattern" "$@"
+    return
+  fi
+
+  grep -R -E -q -- "$pattern" "$@" 2>/dev/null
 }
 
 count_matches() {
@@ -39,7 +48,12 @@ count_matches() {
     return
   fi
 
-  rg -- "$pattern" "$@" | wc -l | tr -d ' '
+  if command -v rg >/dev/null 2>&1; then
+    rg -- "$pattern" "$@" | wc -l | tr -d ' '
+    return
+  fi
+
+  grep -R -E -h -- "$pattern" "$@" 2>/dev/null | wc -l | tr -d ' '
 }
 
 status_line() {
@@ -534,11 +548,11 @@ print_summary() {
   printf "%s\n" "- Documentacao Arquitetural: ${SCORES[11]}/10"
 
   printf "\nRecommended next steps:\n"
-  printf "1. Criar testes unitarios para formatter, utils e TranscribeVideo.\n"
-  printf "2. Criar contrato abstrato para writer quando houver segundo destino ou necessidade de teste.\n"
-  printf "3. Tornar model, language, device e format configuraveis pela CLI.\n"
-  printf "4. Adicionar tratamento de erro para ffmpeg, Whisper e escrita.\n"
-  printf "5. Implementar SRT como proxima fatia vertical pequena.\n"
+  printf "1. Implementar SRT como proxima fatia vertical pequena.\n"
+  printf "2. Adicionar selecao real de formatter quando --format ganhar novos formatos.\n"
+  printf "3. Avaliar subcomandos CLI quando houver batch, srt ou outros fluxos.\n"
+  printf "4. Refinar tratamento de erros com excecoes especificas de infraestrutura/escrita.\n"
+  printf "5. Atualizar projectStructure.json quando a estrutura estabilizar.\n"
 }
 
 SCORES=(0 0 0 0 0 0 0 0 0 0 0 0)

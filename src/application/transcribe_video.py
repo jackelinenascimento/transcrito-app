@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from src.application.formatters.base_formatter import TranscriptionFormatter
-from src.application.writers.file_writer import FileWriter
+from src.application.writers.base_writer import TextWriter
 from src.domain.transcription_service import TranscriptionService
 
 
@@ -11,7 +11,7 @@ class TranscribeVideo:
             self,
             service: TranscriptionService,
             formatter: TranscriptionFormatter,
-            writer: FileWriter
+            writer: TextWriter
     ):
         self.service = service
         self.formatter = formatter

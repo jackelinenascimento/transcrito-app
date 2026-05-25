@@ -91,6 +91,18 @@ Executar:
 python -m src.main videos/test.mp4
 ```
 
+Opcoes disponiveis:
+
+```
+python -m src.main videos/test.mp4 --out outputs --model base --device cpu --language pt --format txt
+```
+
+- `--out`: diretorio de saida, padrao `outputs`
+- `--model`: modelo Whisper, padrao `base`
+- `--device`: device usado pelo Whisper, padrao `cpu`
+- `--language`: idioma da transcricao, padrao `pt`
+- `--format`: formato de saida, atualmente `txt`
+
 A saída será gerada em:
 
 ```
