@@ -17,7 +17,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.10
+          python-version: "3.10"
 
       - name: Ensure ripgrep available
         run: sudo apt-get update && sudo apt-get install -y ripgrep
@@ -34,8 +34,12 @@ jobs:
           path: architecture_report.json
 
       - name: Fail on low score (optional)
-        if: always()
+        if: ${{ success() }}
         run: |
+          if [ ! -s architecture_report.json ]; then
+            echo "architecture_report.json not found or empty; skipping threshold check"
+            exit 1
+          fi
           score=$(jq '.summary.overall_score' architecture_report.json)
           echo "Architecture overall_score=$score"
           # default threshold - fail if < 7.0
