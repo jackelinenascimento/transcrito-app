@@ -97,6 +97,10 @@ status_line() {
     fail)
       FAIL_COUNT=$((FAIL_COUNT + 1))
       ;;
+    *)
+      # unexpected status - treat as warning and record
+      WARN_COUNT=$((WARN_COUNT + 1))
+      ;;
   esac
 
   # Human readable output
@@ -110,6 +114,9 @@ status_line() {
         ;;
       fail)
         printf "  [fail] %s\n" "$message"
+        ;;
+      *)
+        printf "  [info] %s\n" "$message"
         ;;
     esac
 
@@ -175,6 +182,9 @@ for arg in "$@"; do
   case "$arg" in
     --format=json|--json)
       FORMAT="json"
+      ;;
+    *)
+      # ignore unknown args here (they may be positional)
       ;;
   esac
 done
