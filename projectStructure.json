@@ -18,6 +18,7 @@
       "src/infrastructure/whisper_transcription_service.py",
       "src/domain/transcription.py",
       "src/application/formatters/timestamp_formatter.py",
+      "src/application/formatters/srt_formatter.py",
       "src/application/writers/file_writer.py",
       "outputs/*.txt"
     ]
@@ -31,237 +32,64 @@
   ],
   "dependencies": {
     "python": [
-      {
-        "name": "openai-whisper",
-        "version": ">=20231117",
-        "purpose": "Motor de transcricao de audio/video."
-      },
-      {
-        "name": "torch",
-        "purpose": "Backend usado pelo Whisper para inferencia."
-      }
+      { "name": "openai-whisper", "version": ">=20231117", "purpose": "Motor de transcricao de audio/video." },
+      { "name": "torch", "purpose": "Backend usado pelo Whisper para inferencia." }
     ],
     "system": [
-      {
-        "name": "ffmpeg",
-        "purpose": "Processamento e leitura de arquivos de midia usados pelo Whisper."
-      }
+      { "name": "ffmpeg", "purpose": "Processamento e leitura de arquivos de midia usados pelo Whisper." }
     ]
   },
   "directories": [
-    {
-      "path": "src",
-      "type": "source",
-      "responsibility": "Codigo-fonte principal da aplicacao."
-    },
+    { "path": "src", "type": "source", "responsibility": "Codigo-fonte principal da aplicacao." },
     {
       "path": "src/domain",
       "type": "domain-layer",
-      "responsibility": "Modelos e contratos centrais independentes de bibliotecas externas.",
+      "responsibility": "Modelos e contratos centrais.",
       "files": [
-        {
-          "path": "src/domain/transcription.py",
-          "responsibility": "Define as entidades Transcription e TranscriptionSegment."
-        },
-        {
-          "path": "src/domain/transcription_service.py",
-          "responsibility": "Define o contrato abstrato para servicos de transcricao."
-        },
-        {
-          "path": "src/domain/transcription_errors.py",
-          "responsibility": "Define excecoes especificas para falhas do servico de transcricao."
-        },
-        {
-          "path": "src/domain/__init__.py",
-          "responsibility": "Marca o pacote de dominio."
-        }
+        { "path": "src/domain/transcription.py", "responsibility": "Define as entidades Transcription e TranscriptionSegment." },
+        { "path": "src/domain/transcription_service.py", "responsibility": "Contrato abstrato para servicos de transcricao." },
+        { "path": "src/domain/transcription_errors.py", "responsibility": "Excecoes especificas para transcricao." }
       ]
     },
     {
       "path": "src/application",
       "type": "application-layer",
-      "responsibility": "Casos de uso e servicos de aplicacao que coordenam dominio, formatacao e escrita.",
+      "responsibility": "Casos de uso e formatadores.",
       "files": [
-        {
-          "path": "src/application/transcribe_video.py",
-          "responsibility": "Executa o caso de uso de transcrever um video, formatar o resultado e gravar o arquivo final."
-        },
-        {
-          "path": "src/application/__init__.py",
-          "responsibility": "Marca o pacote de aplicacao."
-        }
+        { "path": "src/application/transcribe_video.py", "responsibility": "Caso de uso principal." }
       ],
       "subdirectories": [
         {
           "path": "src/application/formatters",
-          "responsibility": "Formatadores de transcricoes para formatos de saida.",
           "files": [
-            {
-              "path": "src/application/formatters/base_formatter.py",
-              "responsibility": "Define o contrato TranscriptionFormatter."
-            },
-            {
-              "path": "src/application/formatters/timestamp_formatter.py",
-              "responsibility": "Formata segmentos de transcricao com timestamps em texto."
-            },
-            {
-              "path": "src/application/formatters/__init__.py",
-              "responsibility": "Marca o pacote de formatadores."
-            }
+            { "path": "src/application/formatters/base_formatter.py" },
+            { "path": "src/application/formatters/timestamp_formatter.py" },
+            { "path": "src/application/formatters/srt_formatter.py" }
           ]
         },
-        {
-          "path": "src/application/writers",
-          "responsibility": "Componentes de persistencia de saida da aplicacao.",
-          "files": [
-            {
-              "path": "src/application/writers/base_writer.py",
-              "responsibility": "Define o contrato TextWriter para estrategias de escrita."
-            },
-            {
-              "path": "src/application/writers/errors.py",
-              "responsibility": "Define excecoes especificas para falhas de escrita."
-            },
-            {
-              "path": "src/application/writers/file_writer.py",
-              "responsibility": "Escreve o texto formatado em arquivo."
-            },
-            {
-              "path": "src/application/writers/__init__.py",
-              "responsibility": "Marca o pacote de escritores."
-            }
-          ]
-        },
-        {
-          "path": "src/application/utils",
-          "responsibility": "Funcoes utilitarias usadas pela camada de aplicacao/interface.",
-          "files": [
-            {
-              "path": "src/application/utils/time_formatter.py",
-              "responsibility": "Formata duracoes em texto legivel para exibicao no CLI."
-            },
-            {
-              "path": "src/application/utils/__init__.py",
-              "responsibility": "Marca o pacote de utilitarios."
-            }
-          ]
-        }
+        { "path": "src/application/writers", "files": [ { "path": "src/application/writers/file_writer.py" } ] }
       ]
     },
     {
       "path": "src/infrastructure",
       "type": "infrastructure-layer",
-      "responsibility": "Implementacoes concretas que conversam com bibliotecas externas.",
+      "responsibility": "Implementacoes concretas.",
       "files": [
-        {
-          "path": "src/infrastructure/whisper_transcription_service.py",
-          "responsibility": "Implementa TranscriptionService usando openai-whisper em CPU e idioma portugues."
-        },
-        {
-          "path": "src/infrastructure/__init__.py",
-          "responsibility": "Marca o pacote de infraestrutura."
-        }
+        { "path": "src/infrastructure/whisper_transcription_service.py" },
+        { "path": "src/infrastructure/diarization_provider.py" }
       ]
     },
-    {
-      "path": "src/interfaces",
-      "type": "interface-adapters-layer",
-      "responsibility": "Adaptadores de entrada do sistema.",
-      "subdirectories": [
-        {
-          "path": "src/interfaces/cli",
-          "responsibility": "Interface de linha de comando.",
-          "files": [
-            {
-              "path": "src/interfaces/cli/commands.py",
-              "responsibility": "Parseia argumentos, valida o video, configura formatador/escritor/caso de uso e exibe status."
-            },
-            {
-              "path": "src/interfaces/cli/__init__.py",
-              "responsibility": "Marca o pacote CLI."
-            }
-          ]
-        }
-      ],
-      "files": [
-        {
-          "path": "src/interfaces/__init__.py",
-          "responsibility": "Marca o pacote de interfaces."
-        }
-      ]
-    },
-    {
-      "path": "docs",
-      "type": "documentation",
-      "responsibility": "Documentacao arquitetural, guidelines, rules pequenas e agentes de evolucao do projeto.",
-      "files": [
-        {
-          "path": "docs/ARCHITECTURE_GUIDELINES.MD",
-          "responsibility": "Documenta arquitetura, camadas, contratos, fluxo e pontos de extensao."
-        },
-        {
-          "path": "docs/PROJECT_GUIDELINES.MD",
-          "responsibility": "Documenta boas praticas gerais, convencoes e fluxo de trabalho."
-        },
-        {
-          "path": "docs/EVOLUTION_RULES.MD",
-          "responsibility": "Define regras normativas para evoluir o projeto."
-        }
-      ],
-      "subdirectories": [
-        {
-          "path": "docs/rules",
-          "responsibility": "Regras pequenas por tema para consulta rapida durante alteracoes."
-        },
-        {
-          "path": "docs/agents",
-          "responsibility": "Agentes pequenos por responsabilidade para planejamento, revisao e implementacao."
-        }
-      ]
-    },
-    {
-      "path": "scripts",
-      "type": "automation",
-      "responsibility": "Scripts auxiliares para validacao e avaliacao automatizada do projeto.",
-      "files": [
-        {
-          "path": "scripts/evaluate_architecture.sh",
-          "responsibility": "Avalia o projeto contra guidelines arquiteturais e gera notas por principio."
-        }
-      ]
-    },
-    {
-      "path": "outputs",
-      "type": "generated-output",
-      "responsibility": "Arquivos de transcricao gerados pela CLI."
-    },
-    {
-      "path": "videos",
-      "type": "input-assets",
-      "responsibility": "Local sugerido para armazenar videos de entrada."
-    }
+    { "path": "src/interfaces", "type": "adapters", "files": [ { "path": "src/interfaces/cli/commands.py" } ] },
+    { "path": "docs", "type": "documentation" },
+    { "path": "scripts", "type": "automation" },
+    { "path": "outputs", "type": "generated-output" },
+    { "path": "videos", "type": "input-assets" }
   ],
   "importantFiles": [
-    {
-      "path": "README.md",
-      "responsibility": "Documentacao de uso, arquitetura, requisitos e roadmap."
-    },
-    {
-      "path": "requirements.txt",
-      "responsibility": "Dependencias Python do projeto."
-    },
-    {
-      "path": ".gitignore",
-      "responsibility": "Regras de arquivos ignorados pelo Git."
-    },
-    {
-      "path": "docs/rules/README.md",
-      "responsibility": "Indice das rules pequenas."
-    },
-    {
-      "path": "docs/agents/README.md",
-      "responsibility": "Indice dos agentes pequenos."
-    }
+    { "path": "README.md" },
+    { "path": "requirements.txt" },
+    { "path": "requirements-diarization.txt" },
+    { "path": ".gitignore" }
   ],
   "runtimeBehavior": {
     "input": "Caminho de um arquivo de video recebido por argumento posicional.",
@@ -272,39 +100,16 @@
     "defaultFormatter": "TimestampFormatter"
   },
   "generatedOrLocalOnly": [
-    {
-      "path": ".venv",
-      "reason": "Ambiente virtual local."
-    },
-    {
-      "path": "venv",
-      "reason": "Ambiente virtual local."
-    },
-    {
-      "path": ".idea",
-      "reason": "Configuracao local da IDE."
-    },
-    {
-      "path": "outputs",
-      "reason": "Saidas geradas pela execucao da aplicacao."
-    }
+    { "path": ".venv" },
+    { "path": "venv" },
+    { "path": ".idea" },
+    { "path": "outputs" }
   ],
   "extensionPoints": [
-    {
-      "name": "Novo motor de transcricao",
-      "how": "Criar uma implementacao de src/domain/transcription_service.py em src/infrastructure."
-    },
-    {
-      "name": "Novo formato de saida",
-      "how": "Criar uma implementacao de src/application/formatters/base_formatter.py."
-    },
-    {
-      "name": "Nova estrategia de escrita",
-      "how": "Adicionar writer em src/application/writers e injeta-lo no caso de uso."
-    },
-    {
-      "name": "Novos comandos CLI",
-      "how": "Expandir src/interfaces/cli/commands.py ou separar subcomandos dentro de src/interfaces/cli."
-    }
+    { "name": "Novo motor de transcricao" },
+    { "name": "Novo formato de saida" },
+    { "name": "Nova estrategia de escrita" },
+    { "name": "Novos comandos CLI" }
   ]
 }
+
