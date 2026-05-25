@@ -40,7 +40,12 @@ jobs:
         run: |
           if [ ! -s architecture_report.json ]; then
             echo "architecture_report.json not found or empty; skipping threshold check"
-            # fail the step so the job is marked accordingly
+            exit 1
+          fi
+          # validate JSON
+          if ! jq empty architecture_report.json >/dev/null 2>&1; then
+            echo "architecture_report.json is not valid JSON. Showing file for debugging:"
+            cat architecture_report.json || true
             exit 1
           fi
           score=$(jq '.summary.overall_score' architecture_report.json)

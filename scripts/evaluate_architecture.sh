@@ -161,6 +161,12 @@ principle() {
   # track current principle for JSON collection
   CURRENT_PRINCIPLE="$name"
 
+  # when producing JSON we skip printing principle headers to keep output
+  # strict JSON-only (the script will emit the full JSON in print_summary)
+  if [[ "$FORMAT" == "json" ]]; then
+    return
+  fi
+
   printf "\n## %s\n" "$name"
   printf "%s\n" "$reason"
 }
