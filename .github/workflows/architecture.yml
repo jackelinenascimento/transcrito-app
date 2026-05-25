@@ -1,0 +1,43 @@
+name: Architecture evaluation
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 3 * * *' # daily at 03:00 UTC
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - name: Ensure ripgrep available
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+
+      - name: Run architecture evaluator (JSON)
+        run: |
+          chmod +x scripts/evaluate_architecture.sh
+          ./scripts/evaluate_architecture.sh --format=json > architecture_report.json
+
+      - name: Upload architecture report
+        uses: actions/upload-artifact@v4
+        with:
+          name: architecture-report
+          path: architecture_report.json
+
+      - name: Fail on low score (optional)
+        if: always()
+        run: |
+          score=$(jq '.summary.overall_score' architecture_report.json)
+          echo "Architecture overall_score=$score"
+          # default threshold - fail if < 7.0
+          threshold=7.0
+          awk -v s="$score" -v t="$threshold" 'BEGIN { if (s+0 < t+0) { print "Score below threshold"; exit 1 } }'
