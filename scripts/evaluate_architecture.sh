@@ -698,7 +698,7 @@ out = {
   'root': '$ROOT_DIR',
   'date':  '$now',
   'summary': {
-    'overall_score': '$average',
+    'overall_score': $average,
     'pass': $PASS_COUNT,
     'warn': $WARN_COUNT,
     'fail': $FAIL_COUNT
