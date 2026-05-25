@@ -166,6 +166,11 @@ principle() {
 }
 
 print_header() {
+  # when producing JSON we skip the human readable header
+  if [[ "$FORMAT" == "json" ]]; then
+    return
+  fi
+
   printf "# Architecture Evaluation\n"
   printf "\nProject: transcrito-app\n"
   printf "Root: %s\n" "$ROOT_DIR"
@@ -623,30 +628,32 @@ print_summary() {
   local average
   average="$(awk "BEGIN { printf \"%.1f\", $sum / $count }")"
 
-  printf "\n# Summary\n"
-  printf "\nOverall architecture score: %s/10\n" "$average"
-  printf "Checks: %s ok, %s warnings, %s failures\n" "$PASS_COUNT" "$WARN_COUNT" "$FAIL_COUNT"
+  if [[ "$FORMAT" == "text" ]]; then
+    printf "\n# Summary\n"
+    printf "\nOverall architecture score: %s/10\n" "$average"
+    printf "Checks: %s ok, %s warnings, %s failures\n" "$PASS_COUNT" "$WARN_COUNT" "$FAIL_COUNT"
 
-  printf "\nScores:\n"
-  printf "%s\n" "- Direcao das Dependencias: ${SCORES[0]}/10"
-  printf "%s\n" "- Separacao de Camadas: ${SCORES[1]}/10"
-  printf "%s\n" "- Dominio Independente: ${SCORES[2]}/10"
-  printf "%s\n" "- Casos de Uso: ${SCORES[3]}/10"
-  printf "%s\n" "- Infraestrutura Isolada: ${SCORES[4]}/10"
-  printf "%s\n" "- CLI Fina: ${SCORES[5]}/10"
-  printf "%s\n" "- Formatadores e Writers: ${SCORES[6]}/10"
-  printf "%s\n" "- Configuracao Pela Borda: ${SCORES[7]}/10"
-  printf "%s\n" "- Tratamento de Erros: ${SCORES[8]}/10"
-  printf "%s\n" "- Extensibilidade: ${SCORES[9]}/10"
-  printf "%s\n" "- Testabilidade: ${SCORES[10]}/10"
-  printf "%s\n" "- Documentacao Arquitetural: ${SCORES[11]}/10"
+    printf "\nScores:\n"
+    printf "%s\n" "- Direcao das Dependencias: ${SCORES[0]}/10"
+    printf "%s\n" "- Separacao de Camadas: ${SCORES[1]}/10"
+    printf "%s\n" "- Dominio Independente: ${SCORES[2]}/10"
+    printf "%s\n" "- Casos de Uso: ${SCORES[3]}/10"
+    printf "%s\n" "- Infraestrutura Isolada: ${SCORES[4]}/10"
+    printf "%s\n" "- CLI Fina: ${SCORES[5]}/10"
+    printf "%s\n" "- Formatadores e Writers: ${SCORES[6]}/10"
+    printf "%s\n" "- Configuracao Pela Borda: ${SCORES[7]}/10"
+    printf "%s\n" "- Tratamento de Erros: ${SCORES[8]}/10"
+    printf "%s\n" "- Extensibilidade: ${SCORES[9]}/10"
+    printf "%s\n" "- Testabilidade: ${SCORES[10]}/10"
+    printf "%s\n" "- Documentacao Arquitetural: ${SCORES[11]}/10"
 
-  printf "\nRecommended next steps:\n"
-  printf "1. Implementar SRT como proxima fatia vertical pequena.\n"
-  printf "2. Adicionar selecao real de formatter quando --format ganhar novos formatos.\n"
-  printf "3. Avaliar subcomandos CLI quando houver batch, srt ou outros fluxos.\n"
-  printf "4. Melhorar validacao de entrada para arquivo invalido, permissao e extensao.\n"
-  printf "5. Atualizar projectStructure.json quando novas estruturas estabilizarem.\n"
+    printf "\nRecommended next steps:\n"
+    printf "1. Implementar SRT como proxima fatia vertical pequena.\n"
+    printf "2. Adicionar selecao real de formatter quando --format ganhar novos formatos.\n"
+    printf "3. Avaliar subcomandos CLI quando houver batch, srt ou outros fluxos.\n"
+    printf "4. Melhorar validacao de entrada para arquivo invalido, permissao e extensao.\n"
+    printf "5. Atualizar projectStructure.json quando novas estruturas estabilizarem.\n"
+  fi
 
   # if json requested, emit JSON document combining scores and issues
   if [[ "$FORMAT" == "json" ]]; then
