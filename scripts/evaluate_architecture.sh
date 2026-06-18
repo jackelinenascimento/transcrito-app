@@ -21,6 +21,15 @@ FORMAT="text"
 # temporary file to collect issue entries (JSON lines)
 TMP_ISSUES_FILE=""
 
+DOMAIN_DIR="src/domain"
+APPLICATION_DIR="src/application"
+INFRASTRUCTURE_DIR="src/infrastructure"
+CLI_COMMANDS_FILE="src/interfaces/cli/commands.py"
+TRANSCRIBE_VIDEO_FILE="src/application/transcribe_video.py"
+WHISPER_SERVICE_FILE="src/infrastructure/whisper_transcription_service.py"
+FORMATTERS_DIR="src/application/formatters"
+WRITERS_DIR="src/application/writers"
+
 init_output() {
   if [[ "$FORMAT" == "json" ]]; then
     TMP_ISSUES_FILE="$(mktemp)"
@@ -42,13 +51,21 @@ cleanup_output() {
 has_file() {
   local file_path="$1"
 
-  [[ -f "$file_path" ]]
+  if [[ -f "$file_path" ]]; then
+    return 0
+  fi
+
+  return 1
 }
 
 has_dir() {
   local dir_path="$1"
 
-  [[ -d "$dir_path" ]]
+  if [[ -d "$dir_path" ]]; then
+    return 0
+  fi
+
+  return 1
 }
 
 LAST_MATCHES=""
@@ -229,21 +246,21 @@ score_dependency_direction() {
 
   principle "Direcao das Dependencias" "$score" "Verifica se camadas internas nao importam camadas externas."
 
-  if contains "src\\.(application|infrastructure|interfaces)" "src/domain"; then
+  if contains "src\\.(application|infrastructure|interfaces)" "$DOMAIN_DIR"; then
     status_line fail "domain importa camada externa."
     score=$((score - 4))
   else
     status_line pass "domain nao importa application, infrastructure ou interfaces."
   fi
 
-  if contains "import whisper|from whisper|import torch|from torch|import argparse" "src/application"; then
+  if contains "import whisper|from whisper|import torch|from torch|import argparse" "$APPLICATION_DIR"; then
     status_line fail "application contem dependencia externa/CLI proibida."
     score=$((score - 3))
   else
     status_line pass "application nao importa Whisper, Torch ou argparse."
   fi
 
-  if contains "src\\.infrastructure" "src/domain" "src/application"; then
+  if contains "src\\.infrastructure" "$DOMAIN_DIR" "$APPLICATION_DIR"; then
     status_line fail "domain/application dependem de infrastructure."
     score=$((score - 3))
   else
@@ -260,7 +277,7 @@ score_layer_separation() {
 
   principle "Separacao de Camadas" "$score" "Verifica se cada camada possui responsabilidade clara."
 
-  for path in src/domain src/application src/infrastructure src/interfaces/cli; do
+  for path in "$DOMAIN_DIR" "$APPLICATION_DIR" "$INFRASTRUCTURE_DIR" src/interfaces/cli; do
     if has_dir "$path"; then
       status_line pass "Diretorio encontrado: $path."
     else
@@ -269,14 +286,14 @@ score_layer_separation() {
     fi
   done
 
-  if contains "print\\(" "src/application"; then
+  if contains "print\\(" "$APPLICATION_DIR"; then
     status_line fail "application contem prints."
     score=$((score - 2))
   else
     status_line pass "application nao contem prints."
   fi
 
-  if contains "argparse" "src/domain" "src/application"; then
+  if contains "argparse" "$DOMAIN_DIR" "$APPLICATION_DIR"; then
     status_line fail "argparse vazou para domain/application."
     score=$((score - 2))
   else
@@ -293,28 +310,28 @@ score_domain_independence() {
 
   principle "Dominio Independente" "$score" "Verifica se dominio e pequeno, tipado e sem dependencias externas."
 
-  if has_file "src/domain/transcription.py" && has_file "src/domain/transcription_service.py"; then
+  if has_file "$DOMAIN_DIR/transcription.py" && has_file "$DOMAIN_DIR/transcription_service.py"; then
     status_line pass "Entidade e contrato de transcricao existem."
   else
     status_line fail "Arquivos centrais do dominio estao ausentes."
     score=$((score - 4))
   fi
 
-  if contains "@dataclass" "src/domain/transcription.py"; then
+  if contains "@dataclass" "$DOMAIN_DIR/transcription.py"; then
     status_line pass "Entidades usam dataclass."
   else
     status_line warn "Entidades nao usam dataclass."
     score=$((score - 1))
   fi
 
-  if contains "ABC|abstractmethod" "src/domain/transcription_service.py"; then
+  if contains "ABC|abstractmethod" "$DOMAIN_DIR/transcription_service.py"; then
     status_line pass "Contrato usa ABC/abstractmethod."
   else
     status_line warn "Contrato nao usa ABC/abstractmethod."
     score=$((score - 1))
   fi
 
-  if contains "whisper|torch|argparse|Path|open\\(" "src/domain"; then
+  if contains "whisper|torch|argparse|Path|open\\(" "$DOMAIN_DIR"; then
     status_line fail "Dominio contem detalhe externo ou IO."
     score=$((score - 4))
   else
@@ -331,28 +348,28 @@ score_use_cases() {
 
   principle "Casos de Uso" "$score" "Verifica se application orquestra contratos e evita detalhes externos."
 
-  if has_file "src/application/transcribe_video.py"; then
+  if has_file "$TRANSCRIBE_VIDEO_FILE"; then
     status_line pass "Caso de uso TranscribeVideo existe."
   else
     status_line fail "Caso de uso principal ausente."
     score=$((score - 4))
   fi
 
-  if contains "TranscriptionService" "src/application/transcribe_video.py"; then
+  if contains "TranscriptionService" "$TRANSCRIBE_VIDEO_FILE"; then
     status_line pass "Caso de uso depende do contrato de transcricao."
   else
     status_line warn "Caso de uso nao referencia TranscriptionService."
     score=$((score - 1))
   fi
 
-  if contains "FileWriter" "src/application/transcribe_video.py"; then
+  if contains "FileWriter" "$TRANSCRIBE_VIDEO_FILE"; then
     status_line warn "Caso de uso depende de FileWriter concreto."
     score=$((score - 1))
   else
     status_line pass "Caso de uso nao depende de writer concreto."
   fi
 
-  if contains "whisper|argparse|print\\(" "src/application/transcribe_video.py"; then
+  if contains "whisper|argparse|print\\(" "$TRANSCRIBE_VIDEO_FILE"; then
     status_line fail "Caso de uso contem detalhe de infraestrutura/interface."
     score=$((score - 3))
   else
@@ -369,28 +386,28 @@ score_infrastructure_isolation() {
 
   principle "Infraestrutura Isolada" "$score" "Verifica adapter Whisper e conversao para entidades de dominio."
 
-  if has_file "src/infrastructure/whisper_transcription_service.py"; then
+  if has_file "$WHISPER_SERVICE_FILE"; then
     status_line pass "Adapter Whisper existe."
   else
     status_line fail "Adapter Whisper ausente."
     score=$((score - 4))
   fi
 
-  if contains "TranscriptionService" "src/infrastructure/whisper_transcription_service.py"; then
+  if contains "TranscriptionService" "$WHISPER_SERVICE_FILE"; then
     status_line pass "Adapter implementa contrato do dominio."
   else
     status_line fail "Adapter nao referencia TranscriptionService."
     score=$((score - 2))
   fi
 
-  if contains "TranscriptionSegment|Transcription\\(" "src/infrastructure/whisper_transcription_service.py"; then
+  if contains "TranscriptionSegment|Transcription\\(" "$WHISPER_SERVICE_FILE"; then
     status_line pass "Adapter converte retorno externo para entidades do dominio."
   else
     status_line fail "Adapter pode estar vazando retorno externo."
     score=$((score - 3))
   fi
 
-  if contains "warnings\\.filterwarnings\\(\"ignore\"\\)" "src/infrastructure/whisper_transcription_service.py"; then
+  if contains "warnings\\.filterwarnings\\(\"ignore\"\\)" "$WHISPER_SERVICE_FILE"; then
     status_line warn "Warnings sao suprimidos globalmente."
     score=$((score - 1))
   fi
@@ -405,26 +422,26 @@ score_cli_thinness() {
 
   principle "CLI Fina" "$score" "Verifica se CLI adapta entrada e delega para casos de uso."
 
-  if contains "argparse" "src/interfaces/cli/commands.py"; then
+  if contains "argparse" "$CLI_COMMANDS_FILE"; then
     status_line pass "argparse esta na camada CLI."
   else
     status_line warn "CLI nao usa argparse ou arquivo mudou."
     score=$((score - 1))
   fi
 
-  if contains "TranscribeVideo" "src/interfaces/cli/commands.py"; then
+  if contains "TranscribeVideo" "$CLI_COMMANDS_FILE"; then
     status_line pass "CLI delega para caso de uso."
   else
     status_line fail "CLI nao delega para TranscribeVideo."
     score=$((score - 3))
   fi
 
-  if contains "Whisper \\(base \\| CPU\\)" "src/interfaces/cli/commands.py"; then
+  if contains "Whisper \\(base \\| CPU\\)" "$CLI_COMMANDS_FILE"; then
     status_line warn "CLI contem texto fixo de engine/modelo/device."
     score=$((score - 1))
   fi
 
-  if contains "writer\\.write|model\\.transcribe|whisper" "src/interfaces/cli/commands.py"; then
+  if contains "writer\\.write|model\\.transcribe|whisper" "$CLI_COMMANDS_FILE"; then
     status_line fail "CLI contem escrita direta ou detalhe de engine."
     score=$((score - 3))
   else
@@ -441,28 +458,28 @@ score_formatters_writers() {
 
   principle "Formatadores e Writers" "$score" "Verifica separacao entre formatar e persistir."
 
-  if has_file "src/application/formatters/base_formatter.py" && has_file "src/application/formatters/timestamp_formatter.py"; then
+  if has_file "$FORMATTERS_DIR/base_formatter.py" && has_file "$FORMATTERS_DIR/timestamp_formatter.py"; then
     status_line pass "Contrato e formatter atual existem."
   else
     status_line fail "Contrato ou formatter atual ausente."
     score=$((score - 3))
   fi
 
-  if contains "open\\(|write\\(" "src/application/formatters"; then
+  if contains "open\\(|write\\(" "$FORMATTERS_DIR"; then
     status_line fail "Formatter contem IO/escrita."
     score=$((score - 3))
   else
     status_line pass "Formatters nao escrevem arquivos."
   fi
 
-  if contains "open\\(.+encoding=\"utf-8\"" "src/application/writers/file_writer.py"; then
+  if contains "open\\(.+encoding=\"utf-8\"" "$WRITERS_DIR/file_writer.py"; then
     status_line pass "FileWriter escreve texto com UTF-8."
   else
     status_line warn "FileWriter nao declara UTF-8 ou arquivo mudou."
     score=$((score - 1))
   fi
 
-  if has_file "src/application/writers/base_writer.py"; then
+  if has_file "$WRITERS_DIR/base_writer.py"; then
     status_line pass "Existe contrato abstrato de writer."
   else
     status_line warn "Nao ha contrato abstrato de writer."
@@ -486,21 +503,21 @@ score_configuration() {
     status_line pass "Modelo nao parece fixo em main.py."
   fi
 
-  if contains "device=\"cpu\"" "src/infrastructure"; then
+  if contains "device=\"cpu\"" "$INFRASTRUCTURE_DIR"; then
     status_line warn "Device CPU esta fixo na infraestrutura."
     score=$((score - 1))
   else
     status_line pass "Device parece configuravel."
   fi
 
-  if contains "language=\"pt\"" "src/infrastructure"; then
+  if contains "language=\"pt\"" "$INFRASTRUCTURE_DIR"; then
     status_line warn "Idioma pt esta fixo na infraestrutura."
     score=$((score - 1))
   else
     status_line pass "Idioma parece configuravel."
   fi
 
-  if contains "--format|--model|--language|--device" "src/interfaces/cli/commands.py"; then
+  if contains "--format|--model|--language|--device" "$CLI_COMMANDS_FILE"; then
     status_line pass "CLI expoe parametros configuraveis."
   else
     status_line warn "CLI ainda nao expoe model/language/device/format."
@@ -517,7 +534,7 @@ score_error_handling() {
 
   principle "Tratamento de Erros" "$score" "Verifica validacoes e tratamento de falhas esperadas."
 
-  if contains "exists\\(\\)" "src/interfaces/cli/commands.py"; then
+  if contains "exists\\(\\)" "$CLI_COMMANDS_FILE"; then
     status_line pass "CLI valida existencia do video."
   else
     status_line fail "CLI nao valida existencia do video."
@@ -538,7 +555,7 @@ score_error_handling() {
     score=$((score - 1))
   fi
 
-  if contains "mkdir\\(exist_ok=True\\)" "src/interfaces/cli/commands.py"; then
+  if contains "mkdir\\(exist_ok=True\\)" "$CLI_COMMANDS_FILE"; then
     status_line warn "mkdir nao usa parents=True para paths aninhados."
     score=$((score - 1))
   fi
@@ -553,28 +570,28 @@ score_extensibility() {
 
   principle "Extensibilidade" "$score" "Verifica pontos de extensao para engines, formatos e CLI."
 
-  if has_file "src/domain/transcription_service.py"; then
+  if has_file "$DOMAIN_DIR/transcription_service.py"; then
     status_line pass "Contrato permite novos engines."
   else
     status_line fail "Contrato de engine ausente."
     score=$((score - 3))
   fi
 
-  if has_file "src/application/formatters/base_formatter.py"; then
+  if has_file "$FORMATTERS_DIR/base_formatter.py"; then
     status_line pass "Contrato permite novos formatadores."
   else
     status_line fail "Contrato de formatter ausente."
     score=$((score - 3))
   fi
 
-  if has_file "src/application/writers/base_writer.py"; then
+  if has_file "$WRITERS_DIR/base_writer.py"; then
     status_line pass "Contrato permite novos writers."
   else
     status_line warn "Extensao de writers ainda depende de concreto."
     score=$((score - 1))
   fi
 
-  if contains "subparsers|add_subparsers" "src/interfaces/cli/commands.py"; then
+  if contains "subparsers|add_subparsers" "$CLI_COMMANDS_FILE"; then
     status_line pass "CLI ja suporta subcomandos."
   else
     status_line warn "CLI ainda nao tem subcomandos, ok para fase atual."
@@ -597,14 +614,14 @@ score_testability() {
     score=$((score - 2))
   fi
 
-  if contains "TranscriptionService" "src/application/transcribe_video.py"; then
+  if contains "TranscriptionService" "$TRANSCRIBE_VIDEO_FILE"; then
     status_line pass "Caso de uso pode receber fake de TranscriptionService."
   else
     status_line warn "Caso de uso nao usa contrato claro para fake de service."
     score=$((score - 1))
   fi
 
-  if contains "FileWriter" "src/application/transcribe_video.py"; then
+  if contains "FileWriter" "$TRANSCRIBE_VIDEO_FILE"; then
     status_line warn "Writer concreto reduz isolamento em teste."
     score=$((score - 1))
   fi

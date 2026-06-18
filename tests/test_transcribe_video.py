@@ -83,7 +83,7 @@ class TranscribeVideoTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
 
-            output_path = TranscribeVideo(service, formatter, writer).execute(
+            TranscribeVideo(service, formatter, writer).execute(
                 "videos/example.video.mp4",
                 output_dir,
             )
