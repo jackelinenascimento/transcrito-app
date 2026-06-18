@@ -51,4 +51,15 @@ Notas
 - Por padrão a CLI usa o adapter `WhisperTranscriptionService` quando disponível. É possível passar um factory ou uma instância diferente ao chamar `run()` em código (útil para testes ou para trocar o engine programaticamente).
 - A saída é escrita pelo `FileWriter` e o formatter padrão é `TimestampFormatter` (quando `--format txt`) ou `SrtFormatter` (quando `--format srt`).
 
+Notas sobre a heurística de speakers
+
+- A heurística de atribuição de speakers (quando o provedor não fornece labels)
+	agora é disponibilizada pela classe `SpeakerAssigner` em
+	`src/application/speaker_assigner.py`. Isso facilita testes e permite
+	configurar `gap_threshold` e `max_speakers` por argumento de CLI.
+
+Testes relacionados
+
+- Trestes unitários da heurística: `tests/test_speaker_assigner.py`.
+
 Se precisar, posso gerar exemplos mais detalhados (saída esperada, trechos de SRT gerados, ou um tutorial passo-a-passo com um vídeo de exemplo).

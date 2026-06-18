@@ -27,6 +27,7 @@ O projeto fornece um pipeline simples para transcrever vídeos em texto, gerar l
 - Separação por camadas (domain, application, infrastructure, interfaces)
 - Extensível para múltiplos motores de transcrição
 - Heurística de fallback para diarização quando não disponível
+- Heurística de atribuição de speakers extraída como componente testável (`SpeakerAssigner`)
 
 ## Requisitos
 
@@ -118,6 +119,15 @@ Rode a suíte de testes:
 
 ```bash
 pytest -q
+```
+
+Testes específicos
+
+ - Testes da heurística de atribuição de speakers estão em `tests/test_speaker_assigner.py`.
+ - Para rodar apenas esses testes:
+
+```bash
+PYTHONPATH="$(pwd)" pytest tests/test_speaker_assigner.py -q
 ```
 
 ## Documentação adicional

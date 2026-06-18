@@ -32,6 +32,13 @@ Opções
 - `--max-speakers` (default: 0)
   - Número máximo de speakers que a heurística deve criar (0 = ilimitado).
 
+Implementação e testes
+
+- A heurística que aplica labels de speakers quando a diarização não está
+  disponível foi extraída para `src/application/speaker_assigner.py` como a
+  classe `SpeakerAssigner(gap_threshold, max_speakers)`.
+- Os testes dessa unidade estão em `tests/test_speaker_assigner.py`.
+
 Mensagens e comportamentos ligados às opções
 
 - `--format srt` carrega `SrtFormatter` internamente.
