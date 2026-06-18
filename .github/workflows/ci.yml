@@ -29,12 +29,15 @@ jobs:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
 
-      - name: Install dependencies
+      - name: Install dependencies (CI-friendly)
         run: |
+          # Upgrade pip, install only dev deps for testing. Avoid installing
+          # runtime deps like openai-whisper/torch here (they are heavy and
+          # not needed for unit tests). Install package editable without
+          # pulling its install_requires.
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
           pip install -r requirements-dev.txt || true
-          pip install -e .
+          pip install -e . --no-deps
           pip install pytest pytest-cov ruff
 
       - name: Lint
