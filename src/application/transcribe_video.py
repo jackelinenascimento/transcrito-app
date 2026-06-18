@@ -4,6 +4,7 @@ from src.application.formatters.base_formatter import TranscriptionFormatter
 from src.application.writers.base_writer import TextWriter
 from src.domain.transcription_service import TranscriptionService
 from src.domain.transcription import TranscriptionSegment
+from src.application.speaker_assigner import SpeakerAssigner
 
 
 class TranscribeVideo:
@@ -12,20 +13,20 @@ class TranscribeVideo:
             self,
             service: TranscriptionService,
             formatter: TranscriptionFormatter,
-            writer: TextWriter
-            ,
+            writer: TextWriter,
             diarize: bool = False,
             gap_threshold: float = 1.5,
             max_speakers: int = 0,
             diarization_provider=None,
+            speaker_assigner: SpeakerAssigner | None = None,
     ):
         self.service = service
         self.formatter = formatter
         self.writer = writer
         self.diarize = diarize
-        self.gap_threshold = gap_threshold
-        self.max_speakers = max_speakers
         self.diarization_provider = diarization_provider
+        # If no assigner provided, create a default one with provided values
+        self.speaker_assigner = speaker_assigner or SpeakerAssigner(gap_threshold, max_speakers)
 
     def execute(self, video_path: str, output_dir: Path) -> Path:
         transcription = self.service.transcribe(video_path)
@@ -48,10 +49,8 @@ class TranscribeVideo:
             # was available, apply heuristic as fallback (or as default when
             # diarize is False).
             if not any(getattr(s, "speaker", None) for s in transcription.segments):
-                self._assign_speakers_by_pause(
-                    transcription.segments,
-                    gap_threshold=self.gap_threshold,
-                )
+                # delegate to the SpeakerAssigner
+                self.speaker_assigner.assign(transcription.segments)
 
         formatted_text = self.formatter.format(transcription)
 
@@ -61,34 +60,4 @@ class TranscribeVideo:
 
         return output_file
 
-    def _assign_speakers_by_pause(self, segments: list[TranscriptionSegment], gap_threshold: float = 1.5) -> None:
-        """
-        Assign speaker labels to segments in-place.
-
-        Simple heuristic: start with Speaker 1. For each next segment, if the
-        gap between the current segment start and previous segment end is
-        greater than gap_threshold (seconds), toggle to the next speaker
-        (Speaker 2, then Speaker 1, ...). This is a minimal, local heuristic
-        that gives a sensible default speaker separation when diarization is
-        not available from the transcription engine.
-        """
-        if not segments:
-            return
-
-        current_speaker = 1
-        segments[0].speaker = f"Speaker {current_speaker}"
-        prev_end = segments[0].end
-
-        for seg in segments[1:]:
-            gap = max(0.0, seg.start - prev_end)
-            if gap > gap_threshold:
-                # consider this a new speaker and increment speaker id
-                next_speaker = current_speaker + 1
-                if self.max_speakers and next_speaker > self.max_speakers:
-                    # if we've reached the configured maximum, keep using the
-                    # last speaker id (do not create new labeled speakers)
-                    current_speaker = self.max_speakers
-                else:
-                    current_speaker = next_speaker
-            seg.speaker = f"Speaker {current_speaker}"
-            prev_end = seg.end
+    # speaker assignment logic extracted to src/application/speaker_assigner.py
