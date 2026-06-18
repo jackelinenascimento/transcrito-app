@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      PYTHONPATH: src
+      PYTHONPATH: .
     strategy:
       matrix:
         python-version: ["3.10", "3.11"]
