@@ -27,20 +27,28 @@ init_output() {
     # ensure file exists
     : > "$TMP_ISSUES_FILE"
   fi
+
+  return 0
 }
 
 cleanup_output() {
   if [[ -n "$TMP_ISSUES_FILE" && -f "$TMP_ISSUES_FILE" ]]; then
     rm -f "$TMP_ISSUES_FILE"
   fi
+
+  return 0
 }
 
 has_file() {
-  [[ -f "$1" ]]
+  local file_path="$1"
+
+  [[ -f "$file_path" ]]
 }
 
 has_dir() {
-  [[ -d "$1" ]]
+  local dir_path="$1"
+
+  [[ -d "$dir_path" ]]
 }
 
 LAST_MATCHES=""
@@ -58,12 +66,19 @@ contains() {
   if command -v rg >/dev/null 2>&1; then
     # capture up to first 20 matches with filename:line:match
     LAST_MATCHES="$(rg -n --color=never -- "$pattern" "$@" 2>/dev/null | sed -n '1,20p')"
-    [[ -n "$LAST_MATCHES" ]]
-    return
+    if [[ -n "$LAST_MATCHES" ]]; then
+      return 0
+    fi
+
+    return 1
   fi
 
   LAST_MATCHES="$(grep -R -n -E -- "$pattern" "$@" 2>/dev/null | sed -n '1,20p')"
-  [[ -n "$LAST_MATCHES" ]]
+  if [[ -n "$LAST_MATCHES" ]]; then
+    return 0
+  fi
+
+  return 1
 }
 
 count_matches() {
@@ -71,15 +86,16 @@ count_matches() {
   shift
   if [[ "$#" -eq 0 ]]; then
     echo 0
-    return
+    return 0
   fi
 
   if command -v rg >/dev/null 2>&1; then
     rg -n --color=never -- "$pattern" "$@" 2>/dev/null | wc -l | tr -d ' '
-    return
+    return 0
   fi
 
   grep -R -n -E -h -- "$pattern" "$@" 2>/dev/null | wc -l | tr -d ' '
+  return 0
 }
 
 status_line() {
@@ -149,6 +165,8 @@ json.dump(entry, sys.stdout, ensure_ascii=False)
 sys.stdout.write("\n")
 PY
   fi
+
+  return 0
 }
 
 principle() {
@@ -164,17 +182,18 @@ principle() {
   # when producing JSON we skip printing principle headers to keep output
   # strict JSON-only (the script will emit the full JSON in print_summary)
   if [[ "$FORMAT" == "json" ]]; then
-    return
+    return 0
   fi
 
   printf "\n## %s\n" "$name"
   printf "%s\n" "$reason"
+  return 0
 }
 
 print_header() {
   # when producing JSON we skip the human readable header
   if [[ "$FORMAT" == "json" ]]; then
-    return
+    return 0
   fi
 
   printf "# Architecture Evaluation\n"
@@ -186,6 +205,7 @@ print_header() {
   printf "%s\n" "- docs/PROJECT_GUIDELINES.MD"
   printf "%s\n" "- docs/EVOLUTION_RULES.MD"
   printf "%s\n" "- docs/rules/*.rules.md"
+  return 0
 }
 
 # parse args (simple) - accept --format json
@@ -232,6 +252,7 @@ score_dependency_direction() {
 
   [[ "$score" -lt 1 ]] && score=1
   SCORES[0]=$score
+  return 0
 }
 
 score_layer_separation() {
@@ -264,6 +285,7 @@ score_layer_separation() {
 
   [[ "$score" -lt 1 ]] && score=1
   SCORES[1]=$score
+  return 0
 }
 
 score_domain_independence() {
@@ -301,6 +323,7 @@ score_domain_independence() {
 
   [[ "$score" -lt 1 ]] && score=1
   SCORES[2]=$score
+  return 0
 }
 
 score_use_cases() {
@@ -338,6 +361,7 @@ score_use_cases() {
 
   [[ "$score" -lt 1 ]] && score=1
   SCORES[3]=$score
+  return 0
 }
 
 score_infrastructure_isolation() {
@@ -373,6 +397,7 @@ score_infrastructure_isolation() {
 
   [[ "$score" -lt 1 ]] && score=1
   SCORES[4]=$score
+  return 0
 }
 
 score_cli_thinness() {
@@ -408,6 +433,7 @@ score_cli_thinness() {
 
   [[ "$score" -lt 1 ]] && score=1
   SCORES[5]=$score
+  return 0
 }
 
 score_formatters_writers() {
@@ -445,6 +471,7 @@ score_formatters_writers() {
 
   [[ "$score" -lt 1 ]] && score=1
   SCORES[6]=$score
+  return 0
 }
 
 score_configuration() {
@@ -482,6 +509,7 @@ score_configuration() {
 
   [[ "$score" -lt 1 ]] && score=1
   SCORES[7]=$score
+  return 0
 }
 
 score_error_handling() {
@@ -517,6 +545,7 @@ score_error_handling() {
 
   [[ "$score" -lt 1 ]] && score=1
   SCORES[8]=$score
+  return 0
 }
 
 score_extensibility() {
@@ -553,6 +582,7 @@ score_extensibility() {
 
   [[ "$score" -lt 1 ]] && score=1
   SCORES[9]=$score
+  return 0
 }
 
 score_testability() {
@@ -588,6 +618,7 @@ score_testability() {
 
   [[ "$score" -lt 1 ]] && score=1
   SCORES[10]=$score
+  return 0
 }
 
 score_documentation() {
@@ -621,6 +652,7 @@ score_documentation() {
 
   [[ "$score" -lt 1 ]] && score=1
   SCORES[11]=$score
+  return 0
 }
 
 print_summary() {
@@ -710,6 +742,8 @@ out = {
 print(json.dumps(out, ensure_ascii=False, indent=2))
 PY
   fi
+
+  return 0
 }
 
 SCORES=(0 0 0 0 0 0 0 0 0 0 0 0)

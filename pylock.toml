@@ -1,0 +1,59 @@
+lock-version = "1.0"
+created-by = "manual"
+requires-python = ">=3.10"
+
+[[packages]]
+name = "coverage"
+version = "7.14.0"
+
+[[packages]]
+name = "ffmpeg-python"
+version = "0.2.0"
+
+[[packages]]
+name = "iniconfig"
+version = "2.3.0"
+
+[[packages]]
+name = "librosa"
+version = "0.11.0"
+
+[[packages]]
+name = "openai-whisper"
+version = "20250625"
+
+[[packages]]
+name = "packaging"
+version = "26.2"
+
+[[packages]]
+name = "pluggy"
+version = "1.6.0"
+
+[[packages]]
+name = "pygments"
+version = "2.20.0"
+
+[[packages]]
+name = "pytest"
+version = "9.1.0"
+
+[[packages]]
+name = "pytest-cov"
+version = "7.1.0"
+
+[[packages]]
+name = "ruff"
+version = "0.15.17"
+
+[[packages]]
+name = "setuptools"
+version = "82.0.0"
+
+[[packages]]
+name = "soundfile"
+version = "0.13.1"
+
+[[packages]]
+name = "torch"
+version = "2.10.0"

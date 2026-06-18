@@ -13,9 +13,18 @@ class FileWriterTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir) / "transcription.txt"
 
-            FileWriter().write("Transcricao: acao", output_path)
+            FileWriter(base_dir=temp_dir).write("Transcricao: acao", output_path)
 
             self.assertEqual(output_path.read_text(encoding="utf-8"), "Transcricao: acao")
+
+    def test_rejects_output_path_outside_base_directory(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir) / ".." / "transcription.txt"
+
+            with self.assertRaises(FileWriteError) as context:
+                FileWriter(base_dir=temp_dir).write("content", output_path)
+
+        self.assertIn("Path must stay inside", str(context.exception))
 
     def test_wraps_os_error_in_file_write_error(self):
         with self.assertRaises(FileWriteError) as context, patch(

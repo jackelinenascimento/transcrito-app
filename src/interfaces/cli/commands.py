@@ -4,6 +4,7 @@ import time
 from pathlib import Path
 
 from src.application.formatters.timestamp_formatter import TimestampFormatter
+from src.application.safe_paths import UnsafePathError, resolve_inside_base
 from src.application.transcribe_video import TranscribeVideo
 from src.application.writers.file_writer import FileWriter
 from src.application.writers.errors import WriteError
@@ -42,7 +43,13 @@ def run(service_factory):
 
     args = parser.parse_args()
 
-    video_path = Path(args.video)
+    base_dir = Path.cwd()
+    try:
+        video_path = resolve_inside_base(args.video, base_dir)
+        output_dir = resolve_inside_base(args.out, base_dir)
+    except UnsafePathError as exc:
+        print(f"❌ Unsafe path: {exc}")
+        return
 
     if not video_path.exists():
         print(f"❌ Video not found: {video_path}")
@@ -52,7 +59,6 @@ def run(service_factory):
         print("❌ ffmpeg not found. Install ffmpeg before transcribing.")
         return
 
-    output_dir = Path(args.out)
     try:
         output_dir.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
@@ -82,7 +88,7 @@ def run(service_factory):
         formatter = SrtFormatter()
     else:
         formatter = TimestampFormatter()
-    writer = FileWriter()
+    writer = FileWriter(base_dir)
     diarization_provider = None
     if args.diarize:
         try:
